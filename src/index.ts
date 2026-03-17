@@ -5,12 +5,17 @@ initializeTelemetry();
 import express from 'express';
 import pinoHttp from 'pino-http';
 import { logger } from './logger';
-import { trace } from '@opentelemetry/api';
+import * as opentelemetry from '@opentelemetry/api';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocument } from './swagger';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(pinoHttp({ logger }));
+
+// Mount Swagger OpenAPI Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -18,7 +23,7 @@ app.get('/', async (req, res) => {
   req.log.info('Handling root request');
   
   // Custom span example
-  const tracer = trace.getTracer('orchestration-api-tracer');
+  const tracer = opentelemetry.trace.getTracer('orchestration-api-tracer');
   await tracer.startActiveSpan('process-root-request', async (span) => {
     span.setAttribute('custom_attribute', 'hello_world');
     
