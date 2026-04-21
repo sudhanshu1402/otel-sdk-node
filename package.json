@@ -16,7 +16,7 @@
     "@opentelemetry/auto-instrumentations-node": "^0.55.0",
     "@opentelemetry/exporter-metrics-otlp-grpc": "^0.55.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.55.0",
-    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/resources": "^2.7.0",
     "@opentelemetry/sdk-node": "^0.55.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
