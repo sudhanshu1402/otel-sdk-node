@@ -1,5 +1,7 @@
 # OpenTelemetry SDK Node
 
+[![CI](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A production-ready OpenTelemetry wrapper for Node.js that provides distributed tracing (OTLP/gRPC), structured logging with trace correlation (Pino), and Prometheus-compatible metrics export -- with zero-code auto-instrumentation.
 
 ## Problem
