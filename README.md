@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A production-ready OpenTelemetry wrapper for Node.js that provides distributed tracing (OTLP/gRPC), structured logging with trace correlation (Pino), and Prometheus-compatible metrics export -- with zero-code auto-instrumentation.
+A practical, batteries-included OpenTelemetry setup for Node.js that wires up distributed tracing (OTLP/gRPC), trace-correlated structured logging (Pino), and metrics export -- with zero-code auto-instrumentation.
+
+> **Scope:** a thin configuration layer over the official `@opentelemetry/sdk-node`, plus a small Express app that demonstrates it. The value here is the *wiring* -- boot-order so instrumentation patches apply before any import, trace/log correlation, and graceful flush on shutdown -- not a reimplementation of OpenTelemetry.
 
 ## Problem
 

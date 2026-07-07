@@ -1,7 +1,7 @@
 {
   "name": "otel-sdk-node",
   "version": "1.0.0",
-  "description": "> Custom OpenTelemetry SDK providing distributed tracing, structured logging, and metrics export across microservices.",
+  "description": "Batteries-included OpenTelemetry setup for Node.js: OTLP/gRPC tracing, Pino trace-correlated logs, and metrics, wired into an Express demo.",
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",

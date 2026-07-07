@@ -38,6 +38,13 @@ app.get('/', async (req, res) => {
   res.json({ message: 'Hello from otel-instrumented API!' });
 });
 
+app.get('/ping', (req, res) => {
+  // Health check that echoes the active trace id so callers can correlate
+  // the probe with its trace in Jaeger/Tempo.
+  const traceId = opentelemetry.trace.getActiveSpan()?.spanContext().traceId ?? '';
+  res.json({ status: 'ok', traceId });
+});
+
 app.get('/error', (req, res) => {
   req.log.error('Handling error request');
   res.status(500).json({ error: 'Internal Server Error' });
