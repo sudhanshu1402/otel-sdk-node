@@ -2,29 +2,28 @@
 
 [![CI](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A practical, batteries-included OpenTelemetry setup for Node.js that wires up distributed tracing (OTLP/gRPC), trace-correlated structured logging (Pino), and metrics export -- with zero-code auto-instrumentation.
+A batteries-included OpenTelemetry setup for Node.js: distributed tracing over OTLP/gRPC, trace-correlated structured logging with Pino, and periodic metric export -- with zero-code auto-instrumentation. Ships with a small Express app that exercises it.
 
-> **Scope:** a thin configuration layer over the official `@opentelemetry/sdk-node`, plus a small Express app that demonstrates it. The value here is the *wiring* -- boot-order so instrumentation patches apply before any import, trace/log correlation, and graceful flush on shutdown -- not a reimplementation of OpenTelemetry.
+> **Scope:** a thin configuration layer over the official `@opentelemetry/sdk-node`, plus a demo API that shows it working. The value is the *wiring* -- boot order so instrumentation patches apply before any import, trace/log correlation, and a clean flush on shutdown -- not a reimplementation of OpenTelemetry.
 
 ## Problem
 
-Microservices make debugging distributed failures nearly impossible without correlated observability. A single user request may span 5+ services, and without trace propagation, engineers are left grepping logs across containers hoping timestamps align.
+A single request across microservices may touch five or more services. Without trace propagation and correlated logs, debugging a distributed failure means grepping logs across containers and hoping timestamps line up.
 
-This SDK initializes OpenTelemetry once at process boot, auto-instruments all HTTP/database/queue interactions, and injects `trace_id` and `span_id` into every structured log line -- enabling a single trace ID to reconstruct the full request lifecycle across services.
+This project initializes OpenTelemetry once at process boot, auto-instruments HTTP/DB/queue calls, and injects `trace_id` and `span_id` into every structured log line. One trace ID then reconstructs the full request path, and any log line links back to the span it happened in.
 
 ## Architecture
 
 ```mermaid
 graph TB
-    App[Node.js Application] -->|auto-instrumented spans| SDK[OTel SDK Wrapper]
-    App -->|structured logs| Logger[Pino Logger]
-    Logger -->|inject trace_id, span_id| Logs[Log Aggregator - ELK / Loki]
+    App[Node.js App] -->|auto-instrumented spans| SDK[OTel SDK wrapper]
+    App -->|structured logs| Logger[Pino logger]
+    Logger -->|inject trace_id / span_id| Out[stdout JSON logs]
     SDK -->|OTLP gRPC :4317| Collector[OTel Collector]
-    Collector -->|traces| Jaeger[Jaeger / Tempo]
-    Collector -->|metrics| Prometheus[Prometheus]
-    Prometheus --> Grafana[Grafana Dashboards]
+    Collector -->|logging exporter| Stdout[Collector stdout]
+    Collector -.->|pre-wired, needs API keys| Vendors[Axiom / New Relic / Sentry]
 
-    subgraph "Application Process"
+    subgraph "Application process"
         App
         SDK
         Logger
@@ -32,35 +31,39 @@ graph TB
 
     style SDK fill:#2d3748,color:#fff
     style Collector fill:#4f46e5,color:#fff
-    style Jaeger fill:#059669,color:#fff
-    style Prometheus fill:#dc2626,color:#fff
 ```
 
-**Key architectural decisions:**
-- **Boot-time initialization**: `initializeTelemetry()` runs before any imports to ensure auto-instrumentation patches are applied before modules are loaded. Order matters -- late initialization misses spans.
-- **Trace-log correlation**: Pino's `formatters.log` hook extracts the active span context and injects `trace_id`/`span_id` into every log entry. This enables clicking from a Jaeger trace directly to correlated log lines in ELK/Loki.
-- **Graceful shutdown**: `SIGTERM` handler calls `sdk.shutdown()` to flush all pending spans and metrics before process exit, preventing data loss during deployments.
+**What's actually wired today:** the app exports traces and metrics to a local OpenTelemetry Collector over OTLP/gRPC on port 4317. The collector's active pipelines send everything to its `logging` exporter (stdout), so you can see spans and metrics in `docker-compose logs`. Exporters for Axiom, New Relic, and Sentry are defined in `otel-collector-config.yaml` but not in the active pipelines -- drop in the API keys and add them to a pipeline to ship telemetry to a real backend.
 
-## Tech Stack
+**Decisions worth calling out:**
+- **Boot-time init.** `initializeTelemetry()` runs at the very top of `src/index.ts`, before Express or any instrumented library is imported. Auto-instrumentation works by patching modules on `require`, so anything imported before `sdk.start()` never gets patched and its spans go missing.
+- **Trace/log correlation.** Pino's `formatters.log` hook reads the active span context and adds `trace_id` / `span_id` / `trace_flags` to every log object. The extraction is a pure function (`withTraceContext` in `src/trace-format.ts`) so it can be unit-tested without a live SDK.
+- **Clean shutdown.** Both `SIGTERM` (orchestrator stop) and `SIGINT` (local Ctrl-C) call `sdk.shutdown()` to flush buffered spans and metrics before exit, so the last batch isn't dropped on deploy.
 
-| Technology | Why |
+## Tech stack
+
+| Piece | Role |
 |---|---|
-| **@opentelemetry/sdk-node** | Official Node.js SDK with auto-instrumentation for Express, HTTP, MongoDB, Redis, pg, and 30+ libraries out of the box. |
-| **OTLP gRPC exporters** | Binary protocol with connection multiplexing. Lower overhead than HTTP/JSON for high-throughput services. |
-| **Pino** | Fastest Node.js structured logger (~30K logs/s). JSON output is directly ingestible by ELK/Loki without parsing. |
-| **pino-http** | Express middleware that auto-creates a child logger per request with `req.id`, status code, and response time. |
-| **OTel Collector** | Vendor-agnostic pipeline: receives OTLP, batches, and exports to Jaeger/Tempo/Datadog/etc. Decouples app from backend. |
+| `@opentelemetry/sdk-node` | Official Node SDK; `getNodeAutoInstrumentations()` patches Express, HTTP, and 30+ libraries automatically. |
+| OTLP/gRPC exporters | Send traces and metrics to the collector. Binary protocol, lower overhead than HTTP/JSON. |
+| Pino + pino-http | Fast JSON logger; `pino-http` gives a per-request child logger with request id, status, and duration. |
+| OpenTelemetry Collector | Vendor-agnostic pipeline. Receives OTLP, batches, exports. Decouples the app from any backend. |
+| Express 5 | The demo API. |
+| swagger-ui-express | Serves the OpenAPI doc at `/api-docs`. |
+| Vitest | Unit tests for the log formatter and the OpenAPI/route contract. |
 
-## Key Features
+## Endpoints
 
-- **Zero-code auto-instrumentation** -- Express, HTTP, MongoDB, Redis, pg, and more instrumented automatically at boot
-- **Trace-log correlation** -- every Pino log line includes `trace_id` and `span_id` from the active OpenTelemetry context
-- **Custom span creation** -- `tracer.startActiveSpan()` for wrapping business logic with named spans and custom attributes
-- **Periodic metric export** -- metrics flushed every 10s to OTLP collector for Prometheus scraping
-- **Graceful shutdown** -- `SIGTERM` flushes all pending telemetry before process exit
-- **Environment-aware logging** -- pretty-printed in development, raw JSON in production
+| Route | What it does |
+|---|---|
+| `GET /` | Opens a custom span (`process-root-request`), sets an attribute, waits 100ms, logs inside the span, records an event, returns a greeting. |
+| `GET /ping` | Health check that echoes the active `traceId` so a probe can be correlated with its trace. |
+| `GET /error` | Logs at error level and returns HTTP 500 -- useful for exercising error handling. |
+| `GET /api-docs` | Swagger UI for the OpenAPI definition in `src/swagger.ts`. |
 
-## Trace-Log Correlation Example
+## Trace/log correlation example
+
+A log line emitted inside an active span:
 
 ```json
 {
@@ -73,54 +76,78 @@ graph TB
 }
 ```
 
-This log line can be found in ELK/Loki by searching `trace_id`, then correlated with the full distributed trace in Jaeger/Tempo.
-
-## Scale Considerations
-
-| Dimension | Current | Production Path |
-|---|---|---|
-| **Sampling** | 100% (all spans exported) | Add tail-based sampling in OTel Collector for high-throughput services |
-| **Collector topology** | Single container | Deploy as DaemonSet (K8s) or sidecar for HA and reduced network hops |
-| **Metric cardinality** | Low (default auto-instrumentation) | Add custom metrics with bounded label sets to avoid Prometheus cardinality explosion |
-| **Log volume** | All levels | Set `LOG_LEVEL=warn` in production; use sampling for info-level in high-RPS services |
+Search a log backend by `trace_id`, then jump to the full trace in a tracing backend. In development the logs are pretty-printed via `pino-pretty`; in production (`NODE_ENV=production`) they're raw JSON.
 
 ## Setup
 
 ```bash
-# Start OTel Collector
+# Start the collector
 docker-compose up -d
 
-# Install dependencies
+# Install deps
 npm install
 
-# Run instrumented API
+# Run the instrumented API (ts-node + nodemon)
 npm run dev
 ```
 
 ```bash
-# Generate traces
+# Generate a trace
 curl http://localhost:3000/
-# Check OTel Collector logs for exported spans
+
+# See exported spans/metrics in the collector's stdout
 docker-compose logs otel-collector
 ```
 
-## Integration With Other Projects
+Config is via environment variables (see `.env.example`):
 
-This SDK is designed to be dropped into any Node.js service. Integrating with [distributed-queue-engine](https://github.com/sudhanshu1402/distributed-queue-engine) would provide end-to-end traces spanning: API request -> queue enqueue -> worker processing -> downstream SMTP call.
+| Variable | Default | Purpose |
+|---|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | Collector OTLP/gRPC endpoint. |
+| `OTEL_SERVICE_NAME` | `otel-sdk-node` | Service name stamped on every span/metric. |
+| `OTEL_SERVICE_VERSION` | `1.0.0` | Service version resource attribute. |
+| `LOG_LEVEL` | `info` | Pino log level. |
+| `NODE_ENV` | — | `production` switches logs to raw JSON. |
+| `PORT` | `3000` | HTTP port. |
 
-## Future Improvements
+## Build and test
 
-- [ ] Publish as private npm package for cross-service reuse
-- [ ] Tail-based sampling configuration for production workloads
-- [ ] Baggage propagation for cross-service context (tenant ID, feature flags)
-- [ ] Custom Prometheus counters for business metrics (jobs processed, emails sent)
-- [ ] Grafana dashboard templates for common service health views
+```bash
+npm run build   # tsc -> dist/
+npm start       # node dist/index.js
+npm test        # vitest run
+```
 
-## Deep-Dive Architecture
+Two test files (run in CI on Node 20 and 22):
+- `tests/trace-format.test.ts` -- covers `withTraceContext`: no-active-span passthrough, id injection, immutability, zero/empty-string ids, and overwrite of stale trace fields.
+- `tests/swagger.test.ts` -- pins the OpenAPI shape to the routes actually served, so documenting a nonexistent endpoint (or forgetting one) fails the build.
 
-For a complete system design breakdown with Mermaid diagrams, visit the [System Design Portal](https://sudhanshu1402.github.io/system-design-portal/tracing-sdk).
+## Deploy
+
+- **Docker:** multi-stage `Dockerfile` builds with `npm ci`, ships only production deps, runs as the non-root `node` user, exposes 3000.
+- **Render:** `render.yaml` defines a web service (`npm install --include=dev && npm run build`, then `npm start`).
+
+## Scale considerations
+
+| Dimension | Current | Production path |
+|---|---|---|
+| Sampling | 100% of spans exported | Tail-based sampling in the collector for high-throughput services. |
+| Collector topology | Single container | DaemonSet (K8s) or sidecar for HA and fewer network hops. |
+| Metric cardinality | Low (default auto-instrumentation) | Bound label sets on custom metrics to avoid cardinality blowups. |
+| Log volume | All levels | `LOG_LEVEL=warn` in production; sample info-level in high-RPS paths. |
+
+## Future improvements
+
+- [ ] Publish as a private npm package for cross-service reuse
+- [ ] Tail-based sampling config for production
+- [ ] Baggage propagation for cross-service context (tenant id, feature flags)
+- [ ] Custom counters for business metrics (jobs processed, emails sent)
+- [ ] Grafana dashboard templates
+
+## Related
+
+Designed to drop into any Node service. Wiring it into [distributed-queue-engine](https://github.com/sudhanshu1402/distributed-queue-engine) would give end-to-end traces spanning API request -> queue enqueue -> worker -> downstream call. A deeper design write-up lives on the [System Design Portal](https://sudhanshu1402.github.io/system-design-portal/tracing-sdk).
 
 ## License
 
 MIT
-
