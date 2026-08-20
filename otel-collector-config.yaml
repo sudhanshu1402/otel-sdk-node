@@ -13,7 +13,7 @@ processors:
     limit_mib: 1000
 
 exporters:
-  logging:
+  debug:
     verbosity: detailed
   
   # Vendor exporters ready for API keys 
@@ -38,12 +38,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging] 
+      exporters: [debug]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging]
+      exporters: [debug]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging]
+      exporters: [debug]

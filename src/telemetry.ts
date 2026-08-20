@@ -40,6 +40,37 @@ export const sdk = new NodeSDK({
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
+// An unreachable collector makes sdk.shutdown() hang, so the drain is capped.
+// The spans are lost either way; hanging until SIGKILL also drops the HTTP
+// server's in-flight requests.
+export const SHUTDOWN_TIMEOUT_MS = 10_000;
+
+const preShutdownHooks: Array<() => Promise<void>> = [];
+
+// Register work that must finish before spans are flushed — closing the HTTP
+// listener, so no new request starts a span the exporter will never send.
+export const onBeforeShutdown = (hook: () => Promise<void>) => {
+  preShutdownHooks.push(hook);
+};
+
+const withTimeout = async (work: Promise<unknown>, label: string): Promise<void> => {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} did not settle in ${SHUTDOWN_TIMEOUT_MS}ms`)),
+          SHUTDOWN_TIMEOUT_MS
+        );
+        timer.unref?.();
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 export const initializeTelemetry = () => {
   sdk.start();
   console.log('🚀 OpenTelemetry SDK Initialized');
@@ -47,12 +78,25 @@ export const initializeTelemetry = () => {
   // Flush and shut down cleanly on either termination signal. SIGTERM covers
   // orchestrators (Docker/Kubernetes stop); SIGINT covers a local Ctrl-C. Both
   // must drain buffered spans/metrics before exit or the last batch is lost.
-  const shutdown = () => {
-    sdk.shutdown()
-      .then(() => console.log('OpenTelemetry SDK gracefully shut down'))
-      .catch((error) => console.log('Error shutting down OpenTelemetry SDK', error))
-      .finally(() => process.exit(0));
+  const shutdown = async () => {
+    let code = 0;
+    for (const hook of preShutdownHooks) {
+      try {
+        await withTimeout(hook(), 'pre-shutdown hook');
+      } catch (error) {
+        console.error('Pre-shutdown hook failed', error);
+        code = 1;
+      }
+    }
+    try {
+      await withTimeout(sdk.shutdown(), 'sdk.shutdown()');
+      console.log('OpenTelemetry SDK gracefully shut down');
+    } catch (error) {
+      console.error('Error shutting down OpenTelemetry SDK', error);
+      code = 1;
+    }
+    process.exit(code);
   };
-  process.once('SIGTERM', shutdown);
-  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', () => void shutdown());
+  process.once('SIGINT', () => void shutdown());
 };

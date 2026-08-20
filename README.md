@@ -26,7 +26,7 @@ graph TB
     App -->|structured logs| Logger[Pino logger]
     Logger -->|inject trace_id / span_id| Out[stdout JSON logs]
     SDK -->|OTLP gRPC :4317| Collector[OTel Collector]
-    Collector -->|logging exporter| Stdout[Collector stdout]
+    Collector -->|debug exporter| Stdout[Collector stdout]
     Collector -.->|pre-wired, needs API keys| Vendors[Axiom / New Relic / Sentry]
 
     subgraph "Application process"
