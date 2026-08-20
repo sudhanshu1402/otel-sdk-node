@@ -3,7 +3,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
@@ -28,15 +28,18 @@ const metricReader = new PeriodicExportingMetricReader({
 // Identify this service on every span/metric. Without a resource the collector
 // labels everything `unknown_service`, so traces from different services are
 // indistinguishable. Env-overridable for multiple deploys off one image.
-const resource = new Resource({
-  [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'otel-sdk-node',
-  [ATTR_SERVICE_VERSION]: process.env.OTEL_SERVICE_VERSION || '1.0.0',
-});
+// SDK 2.x stopped merging defaults in, so telemetry.sdk.* is lost without this.
+const resource = defaultResource().merge(
+  resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'otel-sdk-node',
+    [ATTR_SERVICE_VERSION]: process.env.OTEL_SERVICE_VERSION || '1.0.0',
+  })
+);
 
 export const sdk = new NodeSDK({
   resource,
   traceExporter,
-  metricReader,
+  metricReaders: [metricReader],
   instrumentations: [getNodeAutoInstrumentations()],
 });
 
