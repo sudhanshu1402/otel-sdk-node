@@ -1,4 +1,4 @@
-import { initializeTelemetry } from './telemetry';
+import { initializeTelemetry, onBeforeShutdown } from './telemetry';
 // Initialize telemetry before anything else!
 initializeTelemetry();
 
@@ -50,6 +50,15 @@ app.get('/error', (req, res) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   logger.info(`Server listening on port ${port}`);
 });
+
+// Stop accepting connections and let in-flight requests finish before the SDK
+// flushes, so the last spans belong to requests that actually completed.
+onBeforeShutdown(
+  () =>
+    new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    })
+);
