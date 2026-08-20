@@ -2,15 +2,25 @@
   "name": "otel-sdk-node",
   "version": "1.0.0",
   "description": "Batteries-included OpenTelemetry setup for Node.js: OTLP/gRPC tracing, Pino trace-correlated logs, and metrics, wired into an Express demo.",
-  "main": "index.js",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon -w src --ext ts --exec ts-node src/index.ts",
     "build": "tsc",
     "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "opentelemetry",
+    "observability",
+    "tracing",
+    "metrics",
+    "pino",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "Sudhanshu Singh",
   "license": "MIT",
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
