@@ -1,4 +1,10 @@
-# otel-sdk-node
+<h1>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/banner-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/banner-light.svg" />
+  <img src="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/banner-dark.svg" width="100%" alt="otel-sdk-node: OpenTelemetry wiring for Node services. thin config layer over @opentelemetry/sdk-node. The failure it exists for: imported before sdk.start()? never patched, and its spans vanish." />
+</picture>
+</h1>
 
 [![CI](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
