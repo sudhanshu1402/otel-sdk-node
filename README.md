@@ -76,7 +76,7 @@ A log line emitted inside a span:
 npm test
 ```
 
-`tests/trace-format.test.ts` covers `withTraceContext`: passthrough with no active span, id injection, immutability, empty ids, and overwriting stale trace fields. `tests/swagger.test.ts` pins the OpenAPI doc to the routes actually served, so documenting an endpoint that doesn't exist fails the build. CI runs both on Node 20 and 22.
+`tests/trace-format.test.ts` covers `withTraceContext`: passthrough with no active span, id injection, immutability, empty ids, and overwriting stale trace fields. `tests/swagger.test.ts` pins the OpenAPI doc to the routes actually served, so documenting an endpoint that doesn't exist fails the build. `tests/telemetry.test.ts` reads the resource back off the constructed SDK and asserts `telemetry.sdk.*` survives alongside `service.name`, which is the thing SDK 2.x drops silently if you hand it a bare resource. CI runs all three on Node 20 and 22.
 
 ## What it doesn't do
 
