@@ -38,7 +38,12 @@ function attr(text) {
   return escape(text).replace(/"/g, '&quot;');
 }
 
-const ENV = { ...process.env, TZ: 'UTC' };
+const ENV = { ...process.env, TZ: 'UTC', NO_COLOR: '1' };
+
+// GitHub Actions colours vitest output, which made the summary filter match nothing.
+function plain(out) {
+  return out.replace(/\u001b\[[0-?]*[ -\/]*[@-~]/g, '');
+}
 
 const DEMO_FILE = 'scripts/demo-correlation.ts';
 
@@ -49,7 +54,7 @@ function correlationDump() {
     encoding: 'utf8',
     env: ENV,
   });
-  return out.replace(/\n+$/, '').split('\n');
+  return plain(out).replace(/\n+$/, '').split('\n');
 }
 
 // Filtered to the two summary lines: version, start time and duration change between runs.
@@ -59,10 +64,13 @@ function testSummary() {
     encoding: 'utf8',
     env: ENV,
   });
-  return out
+  const text = plain(out);
+  const lines = text
     .split('\n')
     .map((line) => line.replace(/\s+$/, ''))
     .filter((line) => /^\s*(Test Files|Tests)\s/.test(line));
+  if (!lines.length) throw new Error(`no summary lines in the captured output:\n${text}`);
+  return lines;
 }
 
 // A blank or changed capture must fail the build, not quietly redraw the picture.
