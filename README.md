@@ -8,6 +8,8 @@
 
 [![CI](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+![otel-sdk-node at a glance: trace_id injected into every log line, first import wins the auto-instrumentation race, shutdown caps the drain at 10 seconds, 23 tests pass with no collector running](https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/glance.svg)
+
 OpenTelemetry wiring for Node services: OTLP/gRPC traces, Pino logs stamped with the trace they happened in, periodic metrics, and a shutdown that actually flushes. Ships with a small Express app that exercises all of it.
 
 It's a thin configuration layer over the official `@opentelemetry/sdk-node`, not a reimplementation. The value is the wiring, which is the part that's easy to get subtly wrong.
@@ -41,11 +43,7 @@ graph TB
 
 ## Three decisions worth reading
 
-**Boot order.** `initializeTelemetry()` runs at the very top of `src/index.ts`, before Express or anything instrumented gets imported. Auto-instrumentation patches modules on `require`, so anything imported before `sdk.start()` is never patched and its spans silently vanish. This is the bug people spend an afternoon on.
-
-**Correlation is a pure function.** Pino's `formatters.log` hook reads the active span context and adds `trace_id`, `span_id`, and `trace_flags` to every log object. The extraction lives in `withTraceContext` (`src/trace-format.ts`) so it's unit-testable without a live SDK.
-
-**Shutdown flushes.** `SIGTERM` and `SIGINT` both call `sdk.shutdown()`, so the last batch of spans survives a deploy instead of dying with the process.
+Boot order, why correlation is a pure function, and how shutdown avoids hanging on a dead collector: [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Run it
 
@@ -62,13 +60,11 @@ docker-compose logs otel-collector    # spans and metrics land here
 
 Routes: `/` opens a custom span, `/ping` echoes the active trace ID, `/error` returns a 500, `/api-docs` serves Swagger UI. Config is environment variables, listed in `.env.example`.
 
-A log line emitted inside a span:
+## Proof it runs
 
-```json
-{ "level": 30, "msg": "Processing work inside span...",
-  "trace_id": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
-  "span_id": "1234567890abcdef", "trace_flags": 1 }
-```
+![terminal showing the correlation formatter injecting trace_id, span_id and trace_flags into a log line, then npm test passing 23 of 23 with no collector running](https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/demo.svg)
+
+Both blocks above are captured output, not typed text: `npm run assets` runs `scripts/demo-correlation.ts` and the suite, then writes back what those two commands printed. Run the same command yourself and you get the same lines. No collector or network needed for either.
 
 ## Tests
 
@@ -76,7 +72,7 @@ A log line emitted inside a span:
 npm test
 ```
 
-`tests/trace-format.test.ts` covers `withTraceContext`: passthrough with no active span, id injection, immutability, empty ids, and overwriting stale trace fields. `tests/swagger.test.ts` pins the OpenAPI doc to the routes actually served, so documenting an endpoint that doesn't exist fails the build. `tests/telemetry.test.ts` reads the resource back off the constructed SDK and asserts `telemetry.sdk.*` survives alongside `service.name`, which is the thing SDK 2.x drops silently if you hand it a bare resource. CI runs all three on Node 20 and 22.
+23 tests across three files: the correlation formatter, the OpenAPI doc pinned to the routes actually served, and the SDK resource attributes. Breakdown in [docs/DECISIONS.md](docs/DECISIONS.md). CI runs all three on Node 20 and 22.
 
 ## What it doesn't do
 
