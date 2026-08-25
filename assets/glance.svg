@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="150" viewBox="0 0 880 150" role="img" aria-label="otel-sdk-node at a glance: trace_id injected into every log line, first import wins the auto-instrumentation race, shutdown caps the drain at 10 seconds, 23 tests pass with no collector running">
+  <rect width="880" height="150" rx="10" fill="#0d1117" stroke="#30363d"/>
+  <g>
+  <rect x="20" y="30" width="195" height="96" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="36" y="56" fill="#7d8590" font-size="11" letter-spacing="1" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">CORRELATION</text>
+    <text x="36" y="82" fill="#e6edf3" font-size="16" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">trace_id</text>
+    <text x="36" y="106" fill="#7d8590" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">in every log line</text>
+    <rect x="235" y="30" width="195" height="96" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="251" y="56" fill="#7d8590" font-size="11" letter-spacing="1" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">BOOT ORDER</text>
+    <text x="251" y="82" fill="#e6edf3" font-size="16" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">first import</text>
+    <text x="251" y="106" fill="#7d8590" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">before instrumentation</text>
+    <rect x="450" y="30" width="195" height="96" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="466" y="56" fill="#7d8590" font-size="11" letter-spacing="1" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">SHUTDOWN</text>
+    <text x="466" y="82" fill="#e6edf3" font-size="16" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">10s cap</text>
+    <text x="466" y="106" fill="#7d8590" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">drains spans first</text>
+    <rect x="665" y="30" width="195" height="96" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="681" y="56" fill="#7d8590" font-size="11" letter-spacing="1" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">TESTS</text>
+    <text x="681" y="82" fill="#e6edf3" font-size="16" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">23 pass</text>
+    <text x="681" y="106" fill="#7d8590" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">offline, no collector</text>
+  </g>
+</svg>
