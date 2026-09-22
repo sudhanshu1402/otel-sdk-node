@@ -50,7 +50,7 @@ export const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 const preShutdownHooks: Array<() => Promise<void>> = [];
 
-// Register work that must finish before spans are flushed — closing the HTTP
+// Register work that must finish before spans are flushed - closing the HTTP
 // listener, so no new request starts a span the exporter will never send.
 export const onBeforeShutdown = (hook: () => Promise<void>) => {
   preShutdownHooks.push(hook);
