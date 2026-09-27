@@ -1,14 +1,10 @@
-<h1>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/banner-dark.svg" />
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/banner-light.svg" />
-  <img src="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/banner-dark.svg" width="100%" alt="otel-sdk-node: OpenTelemetry wiring for Node services. thin config layer over @opentelemetry/sdk-node. The failure it exists for: imported before sdk.start()? never patched, and its spans vanish." />
-</picture>
-</h1>
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/hero.svg" width="100%" alt="otel-sdk-node as a trace waterfall: GET /checkout with child spans for auth, a Postgres query and a payments API call. A Redis span is missing because the module was imported before sdk.start() and never patched. Every Pino log line is stamped with trace_id and span_id." />
 
 [![CI](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/sudhanshu1402/otel-sdk-node/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-![otel-sdk-node at a glance: trace_id injected into every log line, first import wins the auto-instrumentation race, shutdown caps the drain at 10 seconds, 23 tests pass with no collector running](https://raw.githubusercontent.com/sudhanshu1402/otel-sdk-node/main/assets/glance.svg)
+</div>
 
 OpenTelemetry wiring for Node services: OTLP/gRPC traces, Pino logs stamped with the trace they happened in, periodic metrics, and a shutdown that actually flushes. Ships with a small Express app that exercises all of it.
 
@@ -84,6 +80,10 @@ npm test
 ## Related
 
 Drops into any Node service. Wiring it into [distributed-queue-engine](https://github.com/sudhanshu1402/distributed-queue-engine) gives end-to-end traces from API request through enqueue to worker. Longer write-up on the [System Design Portal](https://sudhanshu1402.github.io/system-design-portal/tracing-sdk).
+
+---
+
+<sub>Part of [sudhanshu1402](https://github.com/sudhanshu1402)'s work: [keel](https://github.com/sudhanshu1402/keel) · [nocap](https://github.com/sudhanshu1402/nocap) · [receipts](https://github.com/sudhanshu1402/receipts) · [enterprise-auth-stack](https://github.com/sudhanshu1402/enterprise-auth-stack) · [distributed-queue-engine](https://github.com/sudhanshu1402/distributed-queue-engine) · [multi-region-mongo-patterns](https://github.com/sudhanshu1402/multi-region-mongo-patterns) · **otel-sdk-node** · [llm-assessment-pipeline](https://github.com/sudhanshu1402/llm-assessment-pipeline). Write-ups on the [System Design Portal](https://sudhanshu1402.github.io/system-design-portal/).</sub>
 
 ## License
 
